@@ -216,6 +216,17 @@
                                 <label>Nombre</label>
                                 <input type="text" class="form-control" id="nombreResponsable" readonly>
                             </div>
+                            <div class="col-sm-12 mt-3">
+                                <div class="form-group">
+                                    <label for="observaciones">Observaciones</label>
+                                    <textarea
+                                        class="form-control"
+                                        name="observaciones"
+                                        id="observaciones"
+                                        rows="3"
+                                        placeholder="Escribe alguna observación sobre esta asignación..."></textarea>
+                                </div>
+                            </div>
                         </div>
                     </form>
                 </div>
@@ -265,6 +276,38 @@
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-secondary" form="formularioElementos">Actualizar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalHistorico">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="modalHistoricoTitulo">Histórico del Elemento</h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-sm text-sm">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Fecha</th>
+                                    <th>Usuario</th>
+                                    <th>Registro</th>
+                                    <th>Información</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tablaHistorico"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -467,6 +510,11 @@
                                         </button>
                                     </td>
                                     <td>
+                                        <button type="button" class="btn btn-info btn-sm" onClick="verHistorico(${registro.id})" title="Ver histórico">
+                                            <i class="fas fa-history"></i>
+                                        </button>
+                                    </td>
+                                    <td>
                                         <button type="button" class="btn btn-danger btn-sm" onClick="mostrarModalEditarElementos(${registro.id})" title="Editar">
                                             <i class="fas fa-edit"></i>
                                         </button>
@@ -534,8 +582,10 @@
     function actualizarResponsable(idElemento){
         id = idElemento
         $('#modalResponsableTitulo').text(`Asignación responsable ${idElemento}`)
-        $('#botonResponsable').prop('disabled', true);
+        $('#botonResponsable').prop('disabled', true)
         $('#nombreResponsable').val('')
+        $('#responsable').val('')
+        $('#observaciones').val('')
         $('#modalResponsable').modal('show')
     }
 
@@ -544,6 +594,63 @@
         llenarFormulario('formularioElementos', 'elementos', 'select', {info:{id: idElemento}}, function(r){
             $('#modalElementosTitulo').text('Editar elemento')
             $('#modalElementos').modal('show')
+        })
+    }
+
+    function verHistorico(idElemento){
+        $('#modalHistoricoTitulo').text(`Histórico del elemento #${idElemento}`)
+        $('#tablaHistorico').html('<tr><td colspan="5" class="text-center"><img src="dist/img/lg2.gif" style="height: 100px;"></td></tr>')
+        $('#modalHistorico').modal('show')
+        
+        enviarPeticion('elementosHistorico', 'getHistorico', {fk_elementos: idElemento}, function(r){
+            let filas = ''
+            if(r.data.length == 0){
+                filas = '<tr><td colspan="5" class="text-center">No hay registros históricos</td></tr>'
+            }else{
+                r.data.map((registro, index) => {
+                    // Parsear el JSON de información
+                    let info = ''
+                    try {
+                        let infoObj = JSON.parse(registro.informacion)
+                        info = '<ul style="margin:0; padding-left:20px;">'
+                        
+                        // Formatear cada campo del JSON
+                        for(let campo in infoObj){
+                            let valor = infoObj[campo]
+                            let nombreCampo = campo
+                            
+                            // Traducir nombres de campos a español
+                            if(campo === 'fk_dependencias') nombreCampo = 'Dependencia ID'
+                            else if(campo === 'responsable') nombreCampo = 'Responsable ID'
+                            else if(campo === 'observaciones') nombreCampo = 'Observaciones'
+                            else if(campo === 'estado') nombreCampo = 'Estado'
+                            else if(campo === 'fk_tipos') nombreCampo = 'Tipo'
+                            else if(campo === 'codigo') nombreCampo = 'Código'
+                            else if(campo === 'elemento') nombreCampo = 'Elemento'
+                            else if(campo === 'fk_clases') nombreCampo = 'Clase'
+                            else if(campo === 'inventario') nombreCampo = 'Inventario'
+                            else if(campo === 'serie') nombreCampo = 'Serie'
+                            else if(campo === 'valor') nombreCampo = 'Valor'
+                            
+                            info += `<li><strong>${nombreCampo}:</strong> ${valor}</li>`
+                        }
+                        info += '</ul>'
+                    } catch(e) {
+                        info = registro.informacion
+                    }
+                    
+                    let fecha = moment(registro.fecha_creacion).format('YYYY-MM-DD HH:mm:ss')
+                    
+                    filas += `<tr>
+                                <td>${index + 1}</td>
+                                <td>${fecha}</td>
+                                <td>${registro.nombre}</td>
+                                <td>${registro.registro}</td>
+                                <td class="text-left">${info}</td>
+                            </tr>`
+                })
+            }
+            $('#tablaHistorico').html(filas)
         })
     }
 
