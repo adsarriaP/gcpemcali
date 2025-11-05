@@ -8,23 +8,64 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class elementos extends baseCrud{
 	protected $tabla = 'elementos';
 
+	//Modifiqué la función para el guardado, agregandole el campo de observaciones dentro del JSON
 	public function updateHistorico($datos){
+		// Extraer observaciones antes de actualizar (si existen)
+		$observaciones = null;
+		if(isset($datos['info']['observaciones'])){
+			$observaciones = $datos['info']['observaciones'];
+			// Remover observaciones del array de actualización para que no cause error en la tabla elementos
+			unset($datos['info']['observaciones']);
+		}
+		
+		// Actualizar elemento en tabla elementos
 		$resultado = parent::update($datos);				
-		//Guardo historico
+		
+		// Guardar histórico en tabla elementos_historico
 		if($resultado['ejecuto']){
+			// Preparar el array de información para el histórico
+			$infoHistorico = $datos['info']; // Contiene fk_dependencias, responsable, etc.
+			
+			// Agregar observaciones al JSON si existen
+			if($observaciones !== null && $observaciones !== ''){
+				$infoHistorico['observaciones'] = $observaciones;
+			}
+			
+			// Preparar datos para histórico (las observaciones van dentro del JSON)
 			$info = [
-				'info'=>[
+				'info' => [
 					'fk_elementos' => $datos['id'],
-					'informacion' => json_encode($datos['info'])
+					'informacion' => json_encode($infoHistorico) // JSON con todos los datos incluidas observaciones
 				]
 			];
+
+			// Insertar en elementos_historico
 			$objHistorico = new elementosHistorico();
 			$respuesta = $objHistorico->insert($info);
-			if($respuesta['ejecuto']){
-				return $resultado;
+
+			// Verificar si se guardó el histórico
+			if(!$respuesta['ejecuto']){
+				// Si falla el histórico, retornar error
+				return [
+					'ejecuto' => false,
+					'mensajeError' => 'Error al guardar histórico: ' . ($respuesta['mensajeError'] ?? 'Error desconocido'),
+					'codigoError' => $respuesta['codigoError'] ?? 0
+				];
 			}
+			
+			// Todo correcto: elemento actualizado y histórico guardado
+			return [
+				'ejecuto' => true,
+				'insertId' => $resultado['insertId'] ?? 0,
+				'affectedRows' => $resultado['affectedRows'] ?? 0,
+				'historicoId' => $respuesta['insertId'] ?? 0
+			];
 		}
+		
+		// Si falla la actualización del elemento
+		return $resultado;
 	}
+
 
 	public function getPDF($datos){
 		$sql = "SELECT					
