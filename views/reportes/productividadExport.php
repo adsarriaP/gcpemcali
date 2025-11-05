@@ -9,17 +9,17 @@ if(count($parametros) == 2) {
         'fechaInicio' => $parametros[0],
         'fechaFin' => $parametros[1]
     ];
-    $nombreArchivo = "Solicitudes_{$parametros[0]}_a_{$parametros[1]}.csv";
+    $nombreArchivo = "Productividad_{$parametros[0]}_a_{$parametros[1]}.csv";
 } else {
     // Modo vigencia (mes)
     $datos = [
         'vigencia' => $parametros[0]
     ];
-    $nombreArchivo = "Solicitudes_{$parametros[0]}.csv";
+    $nombreArchivo = "Productividad_{$parametros[0]}.csv";
 }
 
 $obj = new dashboard();
-$respuesta = $obj->solicitudesExport($datos);
+$respuesta = $obj->productividadExport($datos);
 
 // Verificar si hubo error en la consulta
 if(!$respuesta['ejecuto']) {
@@ -49,20 +49,30 @@ echo "\xEF\xBB\xBF";
 
 $output = fopen('php://output', 'w');
 
-// Escribimos encabezados desde las claves del primer elemento
-fputcsv($output, ['Solicitud','Trámite','Código GCP','Tipo','Clase','Descripción','Serie','Estado','Solicitante','Registro','Fecha creación'], ';');
+// Escribimos encabezados
+fputcsv($output, [
+    'solicitud',
+    'fecha_creacion',
+    'tipo',
+    'codigo',
+    'descripcion',
+    'serie',
+    'nombre',
+    'registro',
+    'estado',
+    'estadoTexto',
+    'fk_solicitudes',
+    'transacciones',
+    'Jefe que aprobo',
+    'Fecha en que aprobo',
+    'Tecnico que atendio',
+    'Fecha en la que atendio tecnico'
+], ';');
 
 // Escribimos cada fila
-$tipos = ['', 'Activo', 'Controlado', 'Arrendamiento Operativo'];
-$clases = ['', '', 'Maquinaria y equipo', 'Muebles y enseres', 'Equipos de computo', 'Equipos de comunicaciones', 'Vehículos', 'Equipos de laboratorio', 'Sillas'];
-$tramites = ['', 'Asignación', 'Reasignación', 'Traspaso', 'Reintegro'];
-$estados = ['','Aceptar elemento', 'Recoger almacen','Aprobar jefe','Realizar inspección','Aprobar inspección','Llevar a almacen','Actualizar SAP','Actualizar carpeta','Reposición','Ejecutada','Anulada'];
 foreach ($respuesta['data'] as $fila) {
-    $fila['fk_tramites'] = $tramites[$fila['fk_tramites']];
-    $fila['fk_tipos'] = $tipos[$fila['fk_tipos']];
-    $fila['fk_clases'] = $clases[$fila['fk_clases']];    
-    $fila['estado'] = $estados[$fila['estado']];
     fputcsv($output, $fila, ';');
 }
+
 fclose($output);
 exit;
