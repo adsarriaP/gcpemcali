@@ -1,0 +1,16 @@
+{
+  "name": "gestion360",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "highcharts": "^9.0.1",
+    "signature_pad": "^5.0.4"
+  }
+}
