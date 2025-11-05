@@ -8,14 +8,30 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class elementos extends baseCrud{
 	protected $tabla = 'elementos';
 
-	//Modifiqué la función para el guardado, agregandole el campo de observaciones dentro del JSON
+	//Modifiqué la función para el guardado, agregandole el campo de motivo, accion y nombre_responsable dentro del JSON
 	public function updateHistorico($datos){
-		// Extraer observaciones antes de actualizar (si existen)
-		$observaciones = null;
-		if(isset($datos['info']['observaciones'])){
-			$observaciones = $datos['info']['observaciones'];
-			// Remover observaciones del array de actualización para que no cause error en la tabla elementos
-			unset($datos['info']['observaciones']);
+		// Extraer motivo antes de actualizar (si existe)
+		$motivo = null;
+		if(isset($datos['info']['motivo'])){
+			$motivo = $datos['info']['motivo'];
+			// Remover motivo del array de actualización para que no cause error en la tabla elementos
+			unset($datos['info']['motivo']);
+		}
+		
+		// Extraer accion antes de actualizar (si existe)
+		$accion = null;
+		if(isset($datos['info']['accion'])){
+			$accion = $datos['info']['accion'];
+			// Remover accion del array de actualización para que no cause error en la tabla elementos
+			unset($datos['info']['accion']);
+		}
+		
+		// Extraer nombre_responsable antes de actualizar (si existe)
+		$nombre_responsable = null;
+		if(isset($datos['info']['nombre_responsable'])){
+			$nombre_responsable = $datos['info']['nombre_responsable'];
+			// Remover nombre_responsable del array de actualización para que no cause error en la tabla elementos
+			unset($datos['info']['nombre_responsable']);
 		}
 		
 		// Actualizar elemento en tabla elementos
@@ -26,16 +42,26 @@ class elementos extends baseCrud{
 			// Preparar el array de información para el histórico
 			$infoHistorico = $datos['info']; // Contiene fk_dependencias, responsable, etc.
 			
-			// Agregar observaciones al JSON si existen
-			if($observaciones !== null && $observaciones !== ''){
-				$infoHistorico['observaciones'] = $observaciones;
+			// Agregar accion al JSON si existe
+			if($accion !== null && $accion !== ''){
+				$infoHistorico['accion'] = $accion;
 			}
 			
-			// Preparar datos para histórico (las observaciones van dentro del JSON)
+			// Agregar motivo al JSON si existe
+			if($motivo !== null && $motivo !== ''){
+				$infoHistorico['motivo'] = $motivo;
+			}
+			
+			// Agregar nombre_responsable al JSON si existe
+			if($nombre_responsable !== null && $nombre_responsable !== ''){
+				$infoHistorico['nombre_responsable'] = $nombre_responsable;
+			}
+			
+			// Preparar datos para histórico (el motivo, accion y nombre_responsable van dentro del JSON)
 			$info = [
 				'info' => [
 					'fk_elementos' => $datos['id'],
-					'informacion' => json_encode($infoHistorico) // JSON con todos los datos incluidas observaciones
+					'informacion' => json_encode($infoHistorico) // JSON con todos los datos incluido el motivo, accion y nombre_responsable
 				]
 			];
 

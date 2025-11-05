@@ -218,13 +218,13 @@
                             </div>
                             <div class="col-sm-12 mt-3">
                                 <div class="form-group">
-                                    <label for="observaciones">Observaciones</label>
+                                    <label for="motivo">Motivo</label>
                                     <textarea
                                         class="form-control"
-                                        name="observaciones"
-                                        id="observaciones"
+                                        name="motivo"
+                                        id="motivo"
                                         rows="3"
-                                        placeholder="Escribe alguna observación sobre esta asignación..."></textarea>
+                                        placeholder="Escribe el motivo de esta asignación..."></textarea>
                                 </div>
                             </div>
                         </div>
@@ -322,6 +322,7 @@
     var dependencia = 0
     var idReceptor = 1
     var idResponsable = 1
+    var nombreResponsable = ''
     var idGestor = 0
     function init(info){
         //Exportar en formato excel
@@ -363,7 +364,8 @@
         $('#formularioDependencias').on('submit', function(e){
             e.preventDefault()
             let datos = parsearFormulario($(this))
-            enviarPeticion('elementos', 'update', {info: datos, id: id}, function(r){
+            datos.accion = 'Asignación de dependencia'
+            enviarPeticion('elementos', 'updateHistorico', {info: datos, id: id}, function(r){
                 toastr.success('Se actualizó correctamente')
                 cargarRegistros({criterio: 'id', valor: id}, 'actualizar', function(){
                     $('#modalDependencias').modal('hide')
@@ -421,11 +423,13 @@
                 if(r.data.length == 0){
                     toastr.error("El registro no existe en la base de datos")
                     idResponsable = 1
+                    nombreResponsable = ''
                     dependencia = 0
                     $('#botonResponsable').prop('disabled', true);
                     $('#nombreResponsable').val('')
                 }else{
                     idResponsable = r.data[0].id
+                    nombreResponsable = r.data[0].nombre
                     dependencia = r.data[0].fk_dependencias
                     $('#botonResponsable').prop('disabled', false);
                     $('#nombreResponsable').val(r.data[0].nombre)
@@ -439,6 +443,8 @@
             let datos = parsearFormulario($(this))
             datos.fk_dependencias = dependencia
             datos.responsable = idResponsable
+            datos.nombre_responsable = nombreResponsable
+            datos.accion = 'Asignación sin solicitud'
             enviarPeticion('elementos', 'updateHistorico', {info: datos, id: id}, function(r){
                 cargarRegistros({criterio: 'id', valor: id}, 'actualizar', function(){
                     $('#modalResponsable').modal('hide')
@@ -450,6 +456,7 @@
         $('#formularioElementos').on('submit', function(e){
             e.preventDefault()
             let datos = parsearFormulario($(this))
+            datos.accion = 'Edición de elemento'
             enviarPeticion('elementos', 'updateHistorico', {info: datos, id: id}, function(r){
                 toastr.success('Se actualizó correctamente')
                 cargarRegistros({criterio: 'id', valor: id}, 'actualizar', function(){
@@ -581,11 +588,13 @@
 
     function actualizarResponsable(idElemento){
         id = idElemento
+        idResponsable = 1
+        nombreResponsable = ''
         $('#modalResponsableTitulo').text(`Asignación responsable ${idElemento}`)
         $('#botonResponsable').prop('disabled', true)
         $('#nombreResponsable').val('')
         $('#responsable').val('')
-        $('#observaciones').val('')
+        $('#motivo').val('')
         $('#modalResponsable').modal('show')
     }
 
@@ -620,9 +629,12 @@
                             let nombreCampo = campo
                             
                             // Traducir nombres de campos a español
-                            if(campo === 'fk_dependencias') nombreCampo = 'Dependencia ID'
+                            if(campo === 'accion') nombreCampo = '🔹 Acción'
+                            else if(campo === 'fk_dependencias') nombreCampo = 'Dependencia ID'
                             else if(campo === 'responsable') nombreCampo = 'Responsable ID'
-                            else if(campo === 'observaciones') nombreCampo = 'Observaciones'
+                            else if(campo === 'nombre_responsable') nombreCampo = '👤 Nombre Responsable'
+                            else if(campo === 'motivo') nombreCampo = 'Motivo'
+                            else if(campo === 'observaciones') nombreCampo = 'Motivo'
                             else if(campo === 'estado') nombreCampo = 'Estado'
                             else if(campo === 'fk_tipos') nombreCampo = 'Tipo'
                             else if(campo === 'codigo') nombreCampo = 'Código'
@@ -632,7 +644,14 @@
                             else if(campo === 'serie') nombreCampo = 'Serie'
                             else if(campo === 'valor') nombreCampo = 'Valor'
                             
-                            info += `<li><strong>${nombreCampo}:</strong> ${valor}</li>`
+                            // Resaltar campos importantes con color
+                            if(campo === 'accion'){
+                                info += `<li style="color: #007bff; font-weight: bold;"><strong>${nombreCampo}:</strong> ${valor}</li>`
+                            }else if(campo === 'nombre_responsable'){
+                                info += `<li style="color: #28a745; font-weight: bold;"><strong>${nombreCampo}:</strong> ${valor}</li>`
+                            }else{
+                                info += `<li><strong>${nombreCampo}:</strong> ${valor}</li>`
+                            }
                         }
                         info += '</ul>'
                     } catch(e) {
@@ -664,7 +683,7 @@
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if(result.value){                
-                enviarPeticion('elementos', 'updateHistorico', {info: {responsable: 1, estado: 'Reintegrado'}, id: idElemento}, function(r){
+                enviarPeticion('elementos', 'updateHistorico', {info: {responsable: 1, estado: 'Reintegrado', accion: 'Reintegro'}, id: idElemento}, function(r){
                     toastr.success('Se actualizó correctamente')
                     cargarRegistros({criterio: 'id', valor: idElemento}, 'actualizar', function(){
                         
