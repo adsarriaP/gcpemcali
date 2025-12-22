@@ -216,17 +216,6 @@
                                 <label>Nombre</label>
                                 <input type="text" class="form-control" id="nombreResponsable" readonly>
                             </div>
-                            <div class="col-sm-12 mt-3">
-                                <div class="form-group">
-                                    <label for="motivo">Motivo</label>
-                                    <textarea
-                                        class="form-control"
-                                        name="motivo"
-                                        id="motivo"
-                                        rows="3"
-                                        placeholder="Escribe el motivo de esta asignación..."></textarea>
-                                </div>
-                            </div>
                         </div>
                     </form>
                 </div>
@@ -280,38 +269,6 @@
             </div>
         </div>
     </div>
-
-    <div class="modal fade" id="modalHistorico">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h4 class="modal-title" id="modalHistoricoTitulo">Histórico del Elemento</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-sm text-sm">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Fecha</th>
-                                    <th>Usuario</th>
-                                    <th>Registro</th>
-                                    <th>Información</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tablaHistorico"></tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
 
 <?php require('views/footer.php');?>
@@ -322,7 +279,6 @@
     var dependencia = 0
     var idReceptor = 1
     var idResponsable = 1
-    var nombreResponsable = ''
     var idGestor = 0
     function init(info){
         //Exportar en formato excel
@@ -364,8 +320,7 @@
         $('#formularioDependencias').on('submit', function(e){
             e.preventDefault()
             let datos = parsearFormulario($(this))
-            datos.accion = 'Asignación de dependencia'
-            enviarPeticion('elementos', 'updateHistorico', {info: datos, id: id}, function(r){
+            enviarPeticion('elementos', 'update', {info: datos, id: id}, function(r){
                 toastr.success('Se actualizó correctamente')
                 cargarRegistros({criterio: 'id', valor: id}, 'actualizar', function(){
                     $('#modalDependencias').modal('hide')
@@ -423,13 +378,11 @@
                 if(r.data.length == 0){
                     toastr.error("El registro no existe en la base de datos")
                     idResponsable = 1
-                    nombreResponsable = ''
                     dependencia = 0
                     $('#botonResponsable').prop('disabled', true);
                     $('#nombreResponsable').val('')
                 }else{
                     idResponsable = r.data[0].id
-                    nombreResponsable = r.data[0].nombre
                     dependencia = r.data[0].fk_dependencias
                     $('#botonResponsable').prop('disabled', false);
                     $('#nombreResponsable').val(r.data[0].nombre)
@@ -443,8 +396,6 @@
             let datos = parsearFormulario($(this))
             datos.fk_dependencias = dependencia
             datos.responsable = idResponsable
-            datos.nombre_responsable = nombreResponsable
-            datos.accion = 'Asignación sin solicitud'
             enviarPeticion('elementos', 'updateHistorico', {info: datos, id: id}, function(r){
                 cargarRegistros({criterio: 'id', valor: id}, 'actualizar', function(){
                     $('#modalResponsable').modal('hide')
@@ -456,7 +407,6 @@
         $('#formularioElementos').on('submit', function(e){
             e.preventDefault()
             let datos = parsearFormulario($(this))
-            datos.accion = 'Edición de elemento'
             enviarPeticion('elementos', 'updateHistorico', {info: datos, id: id}, function(r){
                 toastr.success('Se actualizó correctamente')
                 cargarRegistros({criterio: 'id', valor: id}, 'actualizar', function(){
@@ -514,11 +464,6 @@
                     botonAsignar += `<td>
                                         <button type="button" class="btn btn-danger btn-sm" onClick="actualizarResponsable(${registro.id})" title="Actualizar sin solicitud">
                                             <i class="fas fa-street-view"></i>
-                                        </button>
-                                    </td>
-                                    <td>
-                                        <button type="button" class="btn btn-info btn-sm" onClick="verHistorico(${registro.id})" title="Ver histórico">
-                                            <i class="fas fa-history"></i>
                                         </button>
                                     </td>
                                     <td>
@@ -588,13 +533,9 @@
 
     function actualizarResponsable(idElemento){
         id = idElemento
-        idResponsable = 1
-        nombreResponsable = ''
         $('#modalResponsableTitulo').text(`Asignación responsable ${idElemento}`)
-        $('#botonResponsable').prop('disabled', true)
+        $('#botonResponsable').prop('disabled', true);
         $('#nombreResponsable').val('')
-        $('#responsable').val('')
-        $('#motivo').val('')
         $('#modalResponsable').modal('show')
     }
 
@@ -603,73 +544,6 @@
         llenarFormulario('formularioElementos', 'elementos', 'select', {info:{id: idElemento}}, function(r){
             $('#modalElementosTitulo').text('Editar elemento')
             $('#modalElementos').modal('show')
-        })
-    }
-
-    function verHistorico(idElemento){
-        $('#modalHistoricoTitulo').text(`Histórico del elemento #${idElemento}`)
-        $('#tablaHistorico').html('<tr><td colspan="5" class="text-center"><img src="dist/img/lg2.gif" style="height: 100px;"></td></tr>')
-        $('#modalHistorico').modal('show')
-        
-        enviarPeticion('elementosHistorico', 'getHistorico', {fk_elementos: idElemento}, function(r){
-            let filas = ''
-            if(r.data.length == 0){
-                filas = '<tr><td colspan="5" class="text-center">No hay registros históricos</td></tr>'
-            }else{
-                r.data.map((registro, index) => {
-                    // Parsear el JSON de información
-                    let info = ''
-                    try {
-                        let infoObj = JSON.parse(registro.informacion)
-                        info = '<ul style="margin:0; padding-left:20px;">'
-                        
-                        // Formatear cada campo del JSON
-                        for(let campo in infoObj){
-                            let valor = infoObj[campo]
-                            let nombreCampo = campo
-                            
-                            // Traducir nombres de campos a español
-                            if(campo === 'accion') nombreCampo = '🔹 Acción'
-                            else if(campo === 'fk_dependencias') nombreCampo = 'Dependencia ID'
-                            else if(campo === 'responsable') nombreCampo = 'Responsable ID'
-                            else if(campo === 'nombre_responsable') nombreCampo = '👤 Nombre Responsable'
-                            else if(campo === 'motivo') nombreCampo = 'Motivo'
-                            else if(campo === 'observaciones') nombreCampo = 'Motivo'
-                            else if(campo === 'estado') nombreCampo = 'Estado'
-                            else if(campo === 'fk_tipos') nombreCampo = 'Tipo'
-                            else if(campo === 'codigo') nombreCampo = 'Código'
-                            else if(campo === 'elemento') nombreCampo = 'Elemento'
-                            else if(campo === 'fk_clases') nombreCampo = 'Clase'
-                            else if(campo === 'inventario') nombreCampo = 'Inventario'
-                            else if(campo === 'serie') nombreCampo = 'Serie'
-                            else if(campo === 'valor') nombreCampo = 'Valor'
-                            
-                            // Resaltar campos importantes con color
-                            if(campo === 'accion'){
-                                info += `<li style="color: #007bff; font-weight: bold;"><strong>${nombreCampo}:</strong> ${valor}</li>`
-                            }else if(campo === 'nombre_responsable'){
-                                info += `<li style="color: #28a745; font-weight: bold;"><strong>${nombreCampo}:</strong> ${valor}</li>`
-                            }else{
-                                info += `<li><strong>${nombreCampo}:</strong> ${valor}</li>`
-                            }
-                        }
-                        info += '</ul>'
-                    } catch(e) {
-                        info = registro.informacion
-                    }
-                    
-                    let fecha = moment(registro.fecha_creacion).format('YYYY-MM-DD HH:mm:ss')
-                    
-                    filas += `<tr>
-                                <td>${index + 1}</td>
-                                <td>${fecha}</td>
-                                <td>${registro.nombre}</td>
-                                <td>${registro.registro}</td>
-                                <td class="text-left">${info}</td>
-                            </tr>`
-                })
-            }
-            $('#tablaHistorico').html(filas)
         })
     }
 
@@ -683,7 +557,7 @@
             cancelButtonText: 'Cancelar'
         }).then((result) => {
             if(result.value){                
-                enviarPeticion('elementos', 'updateHistorico', {info: {responsable: 1, estado: 'Reintegrado', accion: 'Reintegro'}, id: idElemento}, function(r){
+                enviarPeticion('elementos', 'updateHistorico', {info: {responsable: 1, estado: 'Reintegrado'}, id: idElemento}, function(r){
                     toastr.success('Se actualizó correctamente')
                     cargarRegistros({criterio: 'id', valor: idElemento}, 'actualizar', function(){
                         

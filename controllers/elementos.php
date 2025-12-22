@@ -8,90 +8,23 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class elementos extends baseCrud{
 	protected $tabla = 'elementos';
 
-	//Modifiqué la función para el guardado, agregandole el campo de motivo, accion y nombre_responsable dentro del JSON
 	public function updateHistorico($datos){
-		// Extraer motivo antes de actualizar (si existe)
-		$motivo = null;
-		if(isset($datos['info']['motivo'])){
-			$motivo = $datos['info']['motivo'];
-			// Remover motivo del array de actualización para que no cause error en la tabla elementos
-			unset($datos['info']['motivo']);
-		}
-		
-		// Extraer accion antes de actualizar (si existe)
-		$accion = null;
-		if(isset($datos['info']['accion'])){
-			$accion = $datos['info']['accion'];
-			// Remover accion del array de actualización para que no cause error en la tabla elementos
-			unset($datos['info']['accion']);
-		}
-		
-		// Extraer nombre_responsable antes de actualizar (si existe)
-		$nombre_responsable = null;
-		if(isset($datos['info']['nombre_responsable'])){
-			$nombre_responsable = $datos['info']['nombre_responsable'];
-			// Remover nombre_responsable del array de actualización para que no cause error en la tabla elementos
-			unset($datos['info']['nombre_responsable']);
-		}
-		
-		// Actualizar elemento en tabla elementos
 		$resultado = parent::update($datos);				
-		
-		// Guardar histórico en tabla elementos_historico
+		//Guardo historico
 		if($resultado['ejecuto']){
-			// Preparar el array de información para el histórico
-			$infoHistorico = $datos['info']; // Contiene fk_dependencias, responsable, etc.
-			
-			// Agregar accion al JSON si existe
-			if($accion !== null && $accion !== ''){
-				$infoHistorico['accion'] = $accion;
-			}
-			
-			// Agregar motivo al JSON si existe
-			if($motivo !== null && $motivo !== ''){
-				$infoHistorico['motivo'] = $motivo;
-			}
-			
-			// Agregar nombre_responsable al JSON si existe
-			if($nombre_responsable !== null && $nombre_responsable !== ''){
-				$infoHistorico['nombre_responsable'] = $nombre_responsable;
-			}
-			
-			// Preparar datos para histórico (el motivo, accion y nombre_responsable van dentro del JSON)
 			$info = [
-				'info' => [
+				'info'=>[
 					'fk_elementos' => $datos['id'],
-					'informacion' => json_encode($infoHistorico) // JSON con todos los datos incluido el motivo, accion y nombre_responsable
+					'informacion' => json_encode($datos['info'])
 				]
 			];
-
-			// Insertar en elementos_historico
 			$objHistorico = new elementosHistorico();
 			$respuesta = $objHistorico->insert($info);
-
-			// Verificar si se guardó el histórico
-			if(!$respuesta['ejecuto']){
-				// Si falla el histórico, retornar error
-				return [
-					'ejecuto' => false,
-					'mensajeError' => 'Error al guardar histórico: ' . ($respuesta['mensajeError'] ?? 'Error desconocido'),
-					'codigoError' => $respuesta['codigoError'] ?? 0
-				];
+			if($respuesta['ejecuto']){
+				return $resultado;
 			}
-			
-			// Todo correcto: elemento actualizado y histórico guardado
-			return [
-				'ejecuto' => true,
-				'insertId' => $resultado['insertId'] ?? 0,
-				'affectedRows' => $resultado['affectedRows'] ?? 0,
-				'historicoId' => $respuesta['insertId'] ?? 0
-			];
 		}
-		
-		// Si falla la actualización del elemento
-		return $resultado;
 	}
-
 
 	public function getPDF($datos){
 		$sql = "SELECT					
