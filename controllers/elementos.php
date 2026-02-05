@@ -92,6 +92,55 @@ class elementos extends baseCrud{
 		return $resultado;
 	}
 
+	/**
+	 * Función para activar un elemento que está en estado Reintegrado
+	 * Cambia de Reintegrado a Activo y asigna nuevo responsable
+	 */
+	public function activarDesdeReintegro($datos){
+		// Validar que el elemento existe y está en estado Reintegrado
+		$elemento = parent::select(['info' => ['id' => $datos['id']]]);
+		
+		if(empty($elemento['data'])){
+			return [
+				'ejecuto' => false,
+				'mensajeError' => 'El elemento no existe'
+			];
+		}
+		
+		$elemento = $elemento['data'][0];
+		
+		if($elemento['estado'] !== 'Reintegrado'){
+			return [
+				'ejecuto' => false,
+				'mensajeError' => 'El elemento no está en estado Reintegrado'
+			];
+		}
+		
+		// Preparar datos para actualizar
+		$infoActualizar = [
+			'id' => $datos['id'],
+			'info' => [
+				'estado' => 'Activo',
+				'responsable' => $datos['responsable'],
+				'fk_dependencias' => $datos['fk_dependencias'],
+				'accion' => 'Activación desde Reintegro'
+			]
+		];
+		
+		// Si existe nombre_responsable, agregarlo
+		if(isset($datos['nombre_responsable'])){
+			$infoActualizar['info']['nombre_responsable'] = $datos['nombre_responsable'];
+		}
+		
+		// Si existe motivo de activación, agregarlo
+		if(isset($datos['motivo'])){
+			$infoActualizar['info']['motivo'] = $datos['motivo'];
+		}
+		
+		// Usar updateHistorico para mantener registro de auditoría
+		return $this->updateHistorico($infoActualizar);
+	}
+
 
 	public function getPDF($datos){
 		$sql = "SELECT					
@@ -176,6 +225,10 @@ class elementos extends baseCrud{
 			case 'sinRespDMNew':
 				//Busqueda de libres
 				$filtro = "ele.id != 1 AND ele.fk_contratos = 1 AND ele.responsable = 1 AND ele.responsable2 = 1 AND ele.estado = 'Activo'";
+				break;
+			case 'reintegrados':
+				//Busqueda de elementos reintegrados
+				$filtro = "ele.id != 1 AND ele.fk_contratos = 1 AND ele.estado = 'Reintegrado'";
 				break;
 			default:
 				// code...

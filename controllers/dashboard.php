@@ -273,66 +273,64 @@ class dashboard{
 		}
 		
 		$sql = "SELECT
-			base.*,
-			historico.fk_solicitudes,
-			historico.fechas AS transacciones,
-			SUBSTRING_INDEX(historico.fechas, ';', 1) AS jefeaprobo,
-			SUBSTRING_INDEX(SUBSTRING_INDEX(historico.fechas, ';', 2), ';', -1) AS jefeaprobofecha,
-			SUBSTRING_INDEX(SUBSTRING_INDEX(historico.fechas, ';', 3), ';', -1) AS tecnicoaprobo,
-			SUBSTRING_INDEX(SUBSTRING_INDEX(historico.fechas, ';', 4), ';', -1) AS tecnicoaprobofecha
-		FROM
-			(
-				SELECT
-					sol.id AS solicitud,
-					sol.fecha_creacion,
-					CASE
-						WHEN ele.fk_tipos = 1 THEN 'Activo'
-						WHEN ele.fk_tipos = 2 THEN 'Controlado'
-						WHEN ele.fk_tipos = 3 THEN 'AO'
-					END AS tipo,
-					ele.codigo,
-					ele.descripcion,
-					ele.serie,
-					usu.nombre,
-					usu.registro,
-					sol.estado,
-					CASE
-						WHEN sol.estado = 4 THEN 'Realizar inspección'
-						WHEN sol.estado = 5 THEN 'Aprobar inspección'
-						WHEN sol.estado = 6 THEN 'Llevar a almacen'
-						WHEN sol.estado = 7 THEN 'Actualizar SAP'
-						WHEN sol.estado = 8 THEN 'Actualizar carpeta'
-						WHEN sol.estado = 9 THEN 'Reposición'
-						WHEN sol.estado = 10 THEN 'Ejecutada'
-					END AS estadoTexto
-				FROM
-					elementos ele
-					INNER JOIN (
-						solicitudes sol
-						INNER JOIN usuarios usu ON sol.solicitante = usu.id
-					) ON ele.id = sol.fk_elementos
-				WHERE
-					ele.fk_clases = 4
-					AND sol.fk_tramites = 4
-					AND sol.estado IN (4,5,6,7,8,9,10)
-					AND $condicionFecha
-			) AS base
-			LEFT JOIN (
-				SELECT
-					sh.fk_solicitudes,
-					GROUP_CONCAT(CONCAT(usu.nombre,';',sh.fecha_creacion) SEPARATOR ';') AS fechas
-				FROM
-					solicitudes_historico sh
-					INNER JOIN usuarios usu ON sh.creado_por = usu.id
-				WHERE
-					JSON_EXTRACT(sh.informacion, '$.estado') IN ('4','5')
-				GROUP BY
-					sh.fk_solicitudes
-				ORDER BY
-					fk_solicitudes
-			) AS historico
-			ON base.solicitud = historico.fk_solicitudes
-		ORDER BY base.solicitud";
+    base.*,
+    historico.fk_solicitudes,
+    historico.fechas AS transacciones,
+    SUBSTRING_INDEX(historico.fechas, ';', 1) AS jefeaprobo,
+    SUBSTRING_INDEX(SUBSTRING_INDEX(historico.fechas, ';', 2), ';', -1) AS jefeaprobofecha,
+    SUBSTRING_INDEX(SUBSTRING_INDEX(historico.fechas, ';', 3), ';', -1) AS tecnicoaprobo,
+    SUBSTRING_INDEX(SUBSTRING_INDEX(historico.fechas, ';', 4), ';', -1) AS tecnicoaprobofecha
+FROM
+    (
+        SELECT
+            sol.id AS solicitud,
+            sol.fecha_creacion,
+            CASE
+                WHEN ele.fk_tipos = 1 THEN 'Activo'
+                WHEN ele.fk_tipos = 2 THEN 'Controlado'
+                WHEN ele.fk_tipos = 3 THEN 'AO'
+            END AS tipo,
+            ele.codigo,
+            ele.descripcion,
+            ele.serie,
+            usu.nombre,
+            usu.registro,
+            sol.estado,
+            CASE
+                WHEN sol.estado = 4 THEN 'Realizar inspección'
+                WHEN sol.estado = 5 THEN 'Aprobar inspección'
+                WHEN sol.estado = 6 THEN 'Llevar a almacen'
+                WHEN sol.estado = 7 THEN 'Actualizar SAP'
+                WHEN sol.estado = 8 THEN 'Actualizar carpeta'
+                WHEN sol.estado = 9 THEN 'Reposición'
+                WHEN sol.estado = 10 THEN 'Ejecutada'
+            END AS estadoTexto
+        FROM
+            elementos ele
+            INNER JOIN (
+                solicitudes sol
+                INNER JOIN usuarios usu ON sol.solicitante = usu.id
+            ) ON ele.id = sol.fk_elementos
+        WHERE
+            ele.fk_clases = 4
+            AND sol.fk_tramites = 4
+            AND sol.estado IN (4,5,6,7,8,9,10)
+    ) AS base
+    LEFT JOIN (
+        SELECT
+            sh.fk_solicitudes,
+            GROUP_CONCAT(CONCAT(usu.nombre,';',sh.fecha_creacion) SEPARATOR ';') AS fechas
+        FROM
+            solicitudes_historico sh
+            INNER JOIN usuarios usu ON sh.creado_por = usu.id
+        WHERE
+            JSON_EXTRACT(sh.informacion, '$.estado') IN ('4','5')
+        GROUP BY
+            sh.fk_solicitudes
+        ORDER BY
+            fk_solicitudes
+    ) AS historico
+    ON base.solicitud = historico.fk_solicitudes;";
 		
 		$db = new database();
        	return $db->ejecutarConsulta($sql);
