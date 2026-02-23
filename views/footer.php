@@ -255,7 +255,7 @@
                 }else if(r.data.usuario.rol == 'Jefe'){
                     menu = menuCuentaPersonal + menuElementosAbre + menuElementosDep + menuElementosCon + menuElementosCierra + menuAprobacionesAbre + menuJefe + menuValidador + menuAprobacionesCierra + menuBuscarSolicitud + menuGenerarCuenta + menuReportes
                 }else if(r.data.usuario.rol == 'Inspeccion'){
-                    menu = menuCuentaPersonal + menuAprobacionesAbre + menuInspeccion + menuAprobacionesCierra + menuBuscarElemento + menuBuscarSolicitud + menuEstadisticaContrato + menuDashboardsAbre + menuDashboardsGeneral + menuDashboardsCierra + menuReportes
+                    menu = menuCuentaPersonal + menuAprobacionesAbre + menuInspeccion + menuAprobacionesCierra + menuBuscarElemento + menuBuscarSolicitud + menuEstadisticaContrato + menuDashboardsAbre + menuDashboardsGeneral + menuDashboardsCierra + menuGenerarCuenta + menuReportes
                 }else if(r.data.usuario.rol == 'Validador'){
                     menu = menuCuentaPersonal + menuAprobacionesAbre + menuValidador + menuAprobacionesCierra + menuBuscarSolicitud
                 }else if(r.data.usuario.rol == 'Almacen'){
