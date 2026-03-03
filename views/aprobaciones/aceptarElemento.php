@@ -29,16 +29,10 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-bordered table-sm text-sm">
+                                <table class="table table-bordered table-sm text-sm" id="tablaSolicitudes">
                                     <thead>
                                         <tr>
                                             <th>Solicitud</th>
-                                            <th>Trámite</th>
-                                            <th>Tipo</th>
-                                            <th>Código externo</th>
-                                            <th colspan=2>Descripción</th>
-                                            <th>Serie</th>
-                                            <th>Días</th>                            
                                             <th>Opciones</th>
                                         </tr>
                                     </thead>
@@ -62,7 +56,7 @@
     function init(info){
         //Cargar registros
         cargarRegistros({criterio: 'receptor', estado: 1}, function(){
-            console.log('Cargo...')
+            inicializarDataTable()
         })
 
         //Fomulario para cancelar
@@ -81,7 +75,12 @@
         enviarPeticion('solicitudes', 'getSolicitudes', datos, function(r){
             let fila = ''
             let botonAceptar = ''
+            let solicitudesProcesadas = {}
             r.data.map(registro => {
+                if(solicitudesProcesadas[registro.id]){
+                    return
+                }
+                solicitudesProcesadas[registro.id] = true
                 if(registro.tramite == 1){//Asignación
                     botonAceptar = `<a class="btn btn-default btn-sm" href="aprobaciones/aceptarAsignacionProceso/${registro.id}" title="Aprobar">
                                         Firmar ya
@@ -96,13 +95,6 @@
                 }
                 fila += `<tr id=${registro.id}>
                             <td>${registro.id}</td>
-                            <td>${tramites[registro.tramite]}</td>
-                            <td>${tipos[registro.tipo]}</td>
-                            <td>${registro.codigo}</td>
-                            <td class="text-center">${clasesIconos[registro.clase]}</td>
-                            <td>${registro.elemento}</td>
-                            <td>${registro.serie}</td>
-                            <td class="text-center">${registro.tiempo}</td>
                             <td>
                                 <table>
                                     <tr>
@@ -111,6 +103,11 @@
                                                 <i class="fas fa-search"></i>
                                             </button>
                                         </td>                                        
+                                        <td>
+                                            <button type="button" class="btn btn-default btn-sm" onClick="verElementos(${registro.id})" title="Ver elementos">
+                                                Ver elementos
+                                            </button>
+                                        </td>
                                         <td>
                                             ${botonAceptar}
                                         </td>
@@ -129,9 +126,95 @@
                             </td>
                         </tr>`
             })
-            $('#contenido').append(fila)
+            $('#contenido').html(fila)
             callback()
-            $('#conteo_total').text(`Total: ${r.data.length || 0}`)
+            $('#conteo_total').text(`Total: ${Object.keys(solicitudesProcesadas).length || 0}`)
+        })
+    }
+
+    function inicializarDataTable(){
+        if($.fn.DataTable.isDataTable('#tablaSolicitudes')){
+            $('#tablaSolicitudes').DataTable().destroy()
+        }
+
+        $('#tablaSolicitudes').DataTable({
+            "lengthMenu": [10, 25, 50, 100],
+            "pageLength": 10,
+            "order": [[0, 'desc']],
+            "language":{
+                "decimal":        "",
+                "emptyTable":     "Sin datos para mostrar",
+                "info":           "Mostrando _START_ al _END_ de _TOTAL_ registros",
+                "infoEmpty":      "Mostrando 0 to 0 of 0 entries",
+                "infoFiltered":   "(Filtrado de _MAX_ total registros)",
+                "infoPostFix":    "",
+                "thousands":      ".",
+                "lengthMenu":     "Mostrar _MENU_ registros",
+                "loadingRecords": "Cargando...",
+                "processing":     "Procesando...",
+                "search":         "Buscar:",
+                "zeroRecords":    "Ningún registro encontrado",
+                "paginate": {
+                    "first":      "Primero",
+                    "last":       "Último",
+                    "next":       "Sig",
+                    "previous":   "Ant"
+                },
+                "aria": {
+                    "sortAscending":  ": activate to sort column ascending",
+                    "sortDescending": ": activate to sort column descending"
+                }
+            }
+        })
+    }
+
+    function verElementos(idSolicitud){
+        enviarPeticion('solicitudes', 'getSolicitudAll', {criterio: 'solicitud', id: idSolicitud}, function(r){
+            let filas = ''
+            r.data.map(registro => {
+                filas += `<tr>
+                            <td>${registro.codigo}</td>
+                            <td class="text-center">${clasesIconos[registro.clase]}</td>
+                            <td>${registro.elemento}</td>
+                            <td>${registro.serie}</td>
+                        </tr>`
+            })
+
+            Swal.fire({
+                title: `Elementos de la solicitud #${idSolicitud}`,
+                html: `<div class="table-responsive">
+                            <table class="table table-bordered table-striped table-sm text-sm" id="tablaElementosSolicitud">
+                                <thead>
+                                    <tr>
+                                        <th>Código externo</th>
+                                        <th>Clase</th>
+                                        <th>Descripción</th>
+                                        <th>Serie</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${filas}</tbody>
+                            </table>
+                        </div>`,
+                width: '70%',
+                didOpen: () => {
+                    $('#tablaElementosSolicitud').DataTable({
+                        "paging": true,
+                        "searching": true,
+                        "info": false,
+                        "lengthChange": false,
+                        "pageLength": 10,
+                        "language": {
+                            "emptyTable": "Sin datos para mostrar",
+                            "search": "Buscar:",
+                            "zeroRecords": "Ningún registro encontrado",
+                            "paginate": {
+                                "next": "Sig",
+                                "previous": "Ant"
+                            }
+                        }
+                    })
+                }
+            })
         })
     }
 
