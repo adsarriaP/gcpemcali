@@ -246,6 +246,7 @@ class solicitudes extends baseCrud{
 		$sql = "SELECT
 					sol.id,
 					sol.fk_tramites AS tramite,
+					tr.nombre as nombretramite,
 					sol.receptor AS idReceptor,
 					IF(sol.fk_elementos = 0, exs.fk_elementos, sol.fk_elementos) AS idElemento,
 					ele.fk_tipos AS tipo,
@@ -264,6 +265,7 @@ class solicitudes extends baseCrud{
 					((solicitudes sol INNER JOIN (usuarios usu INNER JOIN plantas pla ON usu.fk_plantas = pla.id) ON sol.solicitante = usu.id)
 						LEFT JOIN elementosxsolicitud exs ON exs.fk_solicitudes = sol.id)
 					INNER JOIN elementos ele ON ele.id = IF(sol.fk_elementos = 0, exs.fk_elementos, sol.fk_elementos)
+					inner join tramites tr ON tr.id = sol.fk_tramites
 				WHERE					
 					$filtro";
 		$db = new database();
@@ -424,6 +426,7 @@ class solicitudes extends baseCrud{
 		$sql = "SELECT
 					sol.id,
 					sol.fk_tramites AS tramite,
+                    tr.nombre as nombretramite,
 					sol.receptor AS idReceptor,
 					IF(sol.fk_elementos = 0, exs.fk_elementos, sol.fk_elementos) AS idElemento,
 					ele.fk_tipos AS tipo,
@@ -448,6 +451,7 @@ class solicitudes extends baseCrud{
 						INNER JOIN usuarios rec ON sol.receptor = rec.id)
 						LEFT JOIN elementosxsolicitud exs ON exs.fk_solicitudes = sol.id
 						INNER JOIN elementos ele ON ele.id = IF(sol.fk_elementos = 0, exs.fk_elementos, sol.fk_elementos)
+					inner join tramites tr ON tr.id = sol.fk_tramites
 				WHERE
 					$filtro";
 		$db = new database();

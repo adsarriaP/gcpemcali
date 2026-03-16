@@ -33,6 +33,7 @@
                                     <thead>
                                         <tr>
                                             <th>Solicitud</th>
+                                            <th>Tramite</th>
                                             <th>Opciones</th>
                                         </tr>
                                     </thead>
@@ -77,6 +78,7 @@
             let botonAceptar = ''
             let solicitudesProcesadas = {}
             r.data.map(registro => {
+                console.log('registro----',registro)
                 if(solicitudesProcesadas[registro.id]){
                     return
                 }
@@ -95,6 +97,7 @@
                 }
                 fila += `<tr id=${registro.id}>
                             <td>${registro.id}</td>
+                            <td>${registro.nombretramite}</td>
                             <td>
                                 <table>
                                     <tr>
@@ -171,12 +174,42 @@
     function verElementos(idSolicitud){
         enviarPeticion('solicitudes', 'getSolicitudAll', {criterio: 'solicitud', id: idSolicitud}, function(r){
             let filas = ''
+            let botonAceptar = ''
             r.data.map(registro => {
+                if(registro.tramite == 1){//Asignación
+                    botonAceptar = `<a class="btn btn-default btn-sm" href="aprobaciones/aceptarAsignacionProceso/${registro.id}" title="Aprobar">
+                                        Firmar ya
+                                    </a></br></br>
+                                    <button type="button" class="btn btn-default btn-sm" onClick="firmarAlmacen(${registro.id})" title="Aprobar">
+                                        Firmar en almacén
+                                    </button>`
+                }else{//Traspaso
+                    botonAceptar = `<button type="button" class="btn btn-default btn-sm" onClick="aprobar(${registro.id})" title="Aprobar">
+                                        <i class="fas fa-check text-success"></i>
+                                    </button>`
+                }
+
                 filas += `<tr>
                             <td>${registro.codigo}</td>
                             <td class="text-center">${clasesIconos[registro.clase]}</td>
                             <td>${registro.elemento}</td>
                             <td>${registro.serie}</td>
+                            <td>
+                                 <table>
+                                    <tr>
+                                        <td>
+                                            <button type="button" class="btn btn-default btn-sm text-danger" onClick="cancelarSolicitud(${registro.id},${registro.idElemento})" title="Cancelar solicitud">
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-default btn-sm" onClick="mostrarHistorico(${registro.id},${registro.tramite},${registro.tipo},${registro.clase})" title="Historico">
+                                                <i class="fas fa-history"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </td>
                         </tr>`
             })
 
@@ -190,6 +223,7 @@
                                         <th>Clase</th>
                                         <th>Descripción</th>
                                         <th>Serie</th>
+                                        <th>Opciones</th>
                                     </tr>
                                 </thead>
                                 <tbody>${filas}</tbody>
