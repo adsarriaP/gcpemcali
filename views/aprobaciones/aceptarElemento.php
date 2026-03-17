@@ -70,6 +70,8 @@
                 $(`#${id}`).hide('slow')
             })
         })
+
+
     }
 
     function cargarRegistros(datos, callback){
@@ -284,6 +286,12 @@
                 })
             }
         })
+    }
+
+    function retirarElemento(idSolicitud, idElemento){
+        id = idSolicitud
+        elemento = idElemento
+        $('#modalCancelar').modal('show')
     }
 </script>
 </body>
