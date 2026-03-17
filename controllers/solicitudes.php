@@ -3,151 +3,9 @@ require_once "libs/baseCrud.php";
 require_once "usuarios.php";
 require_once "elementos.php";
 require_once "solicitudesHistorico.php";
-require_once "elementosxsolicitud.php";
 
 class solicitudes extends baseCrud{
 	protected $tabla = 'solicitudes';
-
-	public function crearMultiple($datos){
-		if(!isset($datos['elementos']) || !is_array($datos['elementos'])){
-			return [
-				'ejecuto' => false,
-				'mensajeError' => 'No se recibieron elementos para crear la solicitud'
-			];
-		}
-
-		$elementos = array_unique($datos['elementos']);
-		if(count($elementos) < 2){
-			return [
-				'ejecuto' => false,
-				'mensajeError' => 'Debe seleccionar al menos 2 elementos'
-			];
-		}
-
-		if(!isset($datos['solicitud']) || !is_array($datos['solicitud'])){
-			return [
-				'ejecuto' => false,
-				'mensajeError' => 'No se recibió la información de la solicitud'
-			];
-		}
-
-		$objElementos = new elementos();
-		foreach ($elementos as $idElemento) {
-			$resultado = $objElementos->select([
-				'info' => [
-					'id' => $idElemento
-				]
-			]);
-			if(!isset($resultado['data'][0])){
-				return [
-					'ejecuto' => false,
-					'mensajeError' => "El elemento $idElemento no existe"
-				];
-			}
-			if($resultado['data'][0]['en_tramite'] == 1){
-				return [
-					'ejecuto' => false,
-					'mensajeError' => "El elemento $idElemento ya tiene una solicitud en proceso"
-				];
-			}
-		}
-
-		$infoSolicitud = $datos['solicitud'];
-		$infoSolicitud['fk_elementos'] = 0;
-		$infoSolicitud['estado'] = 1;
-		if($infoSolicitud['fk_tramites'] == 4){
-			$infoSolicitud['estado'] = 3;
-		}
-		$infoSolicitud['solicitante'] = $_SESSION['usuario']['id'];
-		$infoSolicitud['fecha_modificacion'] = date("Y-m-d H:i:s");
-
-		$respuestaSolicitud = parent::insert([
-			'info' => $infoSolicitud
-		]);
-
-		if(!$respuestaSolicitud['ejecuto']){
-			return $respuestaSolicitud;
-		}
-
-		$idSolicitud = $respuestaSolicitud['insertId'];
-
-		$objHistorico = new solicitudesHistorico();
-		$respuestaHistorico = $objHistorico->insert([
-			'info'=>[
-				'fk_solicitudes' => $idSolicitud,
-				'informacion' => json_encode([
-					'solicitud' => $infoSolicitud,
-					'elementos' => $elementos
-				])
-			]
-		]);
-
-		if(!$respuestaHistorico['ejecuto']){
-			return [
-				'ejecuto' => false,
-				'mensajeError' => 'Se creó la solicitud pero no fue posible guardar el histórico'
-			];
-		}
-
-		$objElementosSolicitud = new elementosxsolicitud();
-		$usuario = (int)$_SESSION['usuario']['id'];
-		$estadoSolicitud = (int)$infoSolicitud['estado'];
-		$fechaActual = date("Y-m-d H:i:s");
-		$insertados = 0;
-
-		foreach ($elementos as $idElemento) {
-			$idElemento = (int)$idElemento;
-			$historico = json_encode([
-				'accion' => 'creado',
-				'estado' => $estadoSolicitud,
-				'fecha' => $fechaActual,
-				'usuario' => $usuario
-			]);
-
-			$respuestaDetalle = $objElementosSolicitud->insert([
-				'info' => [
-					'fk_elementos' => $idElemento,
-					'fk_solicitudes' => $idSolicitud,
-					'estado_elemento' => 'Pendiente',
-					'concepto' => '',
-					'estado' => $estadoSolicitud,
-					'modificado_por' => $usuario,
-					'fecha_modificacion' => $fechaActual,
-					'historico' => $historico
-				]
-			]);
-			if(!$respuestaDetalle['ejecuto']){
-				return [
-					'ejecuto' => false,
-					'mensajeError' => "Error al registrar el elemento $idElemento en la solicitud"
-				];
-			}
-
-			$respuestaElemento = $objElementos->update([
-				'info' => [
-					'en_tramite' => 1
-				],
-				'id' => $idElemento
-			]);
-
-			if(!$respuestaElemento['ejecuto']){
-				$db->close();
-				return [
-					'ejecuto' => false,
-					'mensajeError' => "Error al actualizar el estado del elemento $idElemento"
-				];
-			}
-
-			$insertados++;
-		}
-
-		return [
-			'ejecuto' => true,
-			'insertId' => $idSolicitud,
-			'cantidad' => $insertados,
-			'mensaje' => "Solicitud #$idSolicitud creada con $insertados elementos"
-		];
-	}
 
 	public function crear($datos){
 		//primero verifico que ese elemento no este en trámite, especialmente para que no genere duplicados
@@ -247,7 +105,7 @@ class solicitudes extends baseCrud{
 					sol.id,
 					sol.fk_tramites AS tramite,
 					sol.receptor AS idReceptor,
-					IF(sol.fk_elementos = 0, exs.fk_elementos, sol.fk_elementos) AS idElemento,
+					ele.id AS idElemento,
 					ele.fk_tipos AS tipo,
 					ele.fk_clases AS clase,
 					ele.codigo,
@@ -261,9 +119,7 @@ class solicitudes extends baseCrud{
 					DATEDIFF(NOW(),sol.fecha_modificacion) AS tiempo,
 					sol.estado
 				FROM
-					((solicitudes sol INNER JOIN (usuarios usu INNER JOIN plantas pla ON usu.fk_plantas = pla.id) ON sol.solicitante = usu.id)
-						LEFT JOIN elementosxsolicitud exs ON exs.fk_solicitudes = sol.id)
-					INNER JOIN elementos ele ON ele.id = IF(sol.fk_elementos = 0, exs.fk_elementos, sol.fk_elementos)
+					(solicitudes sol INNER JOIN (usuarios usu INNER JOIN plantas pla ON usu.fk_plantas = pla.id) ON sol.solicitante = usu.id) INNER JOIN elementos ele ON sol.fk_elementos = ele.id
 				WHERE					
 					$filtro";
 		$db = new database();
@@ -425,7 +281,7 @@ class solicitudes extends baseCrud{
 					sol.id,
 					sol.fk_tramites AS tramite,
 					sol.receptor AS idReceptor,
-					IF(sol.fk_elementos = 0, exs.fk_elementos, sol.fk_elementos) AS idElemento,
+					ele.id AS idElemento,
 					ele.fk_tipos AS tipo,
 					ele.fk_clases AS clase,
 					ele.codigo,
@@ -445,9 +301,8 @@ class solicitudes extends baseCrud{
 				FROM
 					(((solicitudes sol INNER JOIN usuarios slc ON sol.solicitante = slc.id) 
 						INNER JOIN usuarios jef ON sol.jefe = jef.id) 
-						INNER JOIN usuarios rec ON sol.receptor = rec.id)
-						LEFT JOIN elementosxsolicitud exs ON exs.fk_solicitudes = sol.id
-						INNER JOIN elementos ele ON ele.id = IF(sol.fk_elementos = 0, exs.fk_elementos, sol.fk_elementos)
+						INNER JOIN usuarios rec ON sol.receptor = rec.id) 
+						INNER JOIN elementos ele ON sol.fk_elementos = ele.id
 				WHERE
 					$filtro";
 		$db = new database();
