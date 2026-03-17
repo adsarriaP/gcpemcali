@@ -4,7 +4,7 @@ class database extends mysqli{
 	private $DB_HOST = 'localhost';
 	private $DB_NAME = 'gcp';
 	private $DB_USER = 'root';
-	private $DB_PASS = '';
+	private $DB_PASS = 'root123';
 
 	/*private $DB_HOST = 'localhost';
 	private $DB_NAME = 'gcp';
