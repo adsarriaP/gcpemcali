@@ -72,7 +72,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table class="table table-bordered table-sm text-sm">
+                                <table id="tablaSolicitudes" class="table table-bordered table-sm text-sm">
                                     <thead>
                                         <tr>
                                             <th>Solicitud</th>
@@ -98,8 +98,47 @@
 
 <?php require('views/footer.php');?>
 
+<link rel="stylesheet" href="plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
+
+<script src="plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
+<script src="plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
+<script src="plugins/jszip/jszip.min.js"></script>
+<script src="plugins/datatables-buttons/js/buttons.html5.min.js"></script>
+
 <script src="dist/js/solicitudes.js"></script>
 <script type="text/javascript">
+    function inicializarDataTable(){
+        if($.fn.DataTable.isDataTable('#tablaSolicitudes')){
+            $('#tablaSolicitudes').DataTable().destroy()
+        }
+
+        $('#tablaSolicitudes').DataTable({
+            dom: 'Bfrtip',
+            searching: true,
+            search: {
+                smart: true
+            },
+            pageLength: 10,
+            order: [[0, 'desc']],
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json'
+            },
+            buttons: [
+                {
+                    extend: 'excel',
+                    text: '<i class="fas fa-file-excel"></i> Excel',
+                    className: 'btn btn-success btn-sm',
+                    exportOptions: {
+                        columns: ':not(:last-child)'
+                    }
+                }
+            ],
+            columnDefs: [
+                { targets: [8], orderable: false, searchable: false }
+            ]
+        })
+    }
+
     function init(info){
         //Cargar por defecto donde soy solicitante
         cargarRegistros({criterio: 'solicitante'}, function(){
@@ -144,6 +183,7 @@
             if(r.data.length == 0){
                 toastr.error("No se encontraros registros")
                 $('#contenido').html('')
+                inicializarDataTable()
             }else{
                 r.data.map(registro => {
                     botonComprobante = ''
@@ -214,6 +254,7 @@
                             </tr>`
                 })
                 $('#contenido').html(fila)
+                inicializarDataTable()
             }
             callback()
         })

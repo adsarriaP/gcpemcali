@@ -162,12 +162,52 @@
 
 <?php require('views/footer.php');?>
 
+<link rel="stylesheet" href="plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
+
+<script src="plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
+<script src="plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
+<script src="plugins/jszip/jszip.min.js"></script>
+<script src="plugins/datatables-buttons/js/buttons.html5.min.js"></script>
+
 <script src="dist/js/solicitudes.js"></script>
 <script type="text/javascript">
     var id = 0
     var idS = 0
     var idReceptor = 1
     var idUsuario = 0
+
+    function inicializarDataTable(){
+        if($.fn.DataTable.isDataTable('#tabla')){
+            $('#tabla').DataTable().destroy()
+        }
+
+        $('#tabla').DataTable({
+            dom: 'Bfrtip',
+            searching: true,
+            search: {
+                smart: true
+            },
+            pageLength: 10,
+            order: [[0, 'desc']],
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json'
+            },
+            buttons: [
+                {
+                    extend: 'excel',
+                    text: '<i class="fas fa-file-excel"></i> Excel',
+                    className: 'btn btn-success btn-sm',
+                    exportOptions: {
+                        columns: ':not(:last-child)'
+                    }
+                }
+            ],
+            columnDefs: [
+                { targets: [8], orderable: false, searchable: false }
+            ]
+        })
+    }
+
     function init(info){
         idUsuario = info.data.usuario.id
         //Cambiar href
@@ -327,6 +367,7 @@
             }else{
                 $('#'+r.data[0].id).replaceWith(fila)
             }
+            inicializarDataTable()
             callback()
             $('#conteo_activos').text(`Activos: ${totales[1]}`)
             $('#conteo_controlados').text(`Controlados: ${totales[2]}`)

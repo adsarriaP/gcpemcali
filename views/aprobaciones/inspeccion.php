@@ -58,42 +58,56 @@
 
 <?php require('views/footer.php');?>
 
+<link rel="stylesheet" href="plugins/datatables-buttons/css/buttons.bootstrap4.min.css">
+
+<script src="plugins/datatables-buttons/js/dataTables.buttons.min.js"></script>
+<script src="plugins/datatables-buttons/js/buttons.bootstrap4.min.js"></script>
+<script src="plugins/jszip/jszip.min.js"></script>
+<script src="plugins/datatables-buttons/js/buttons.html5.min.js"></script>
+
 <script src="dist/js/solicitudes.js"></script>
 <script type="text/javascript">
     var id = 0
     var tramite = 0
     var elemento = 0
+
+    function inicializarDataTable(){
+        if($.fn.DataTable.isDataTable('#tabla')){
+            $('#tabla').DataTable().destroy()
+        }
+
+        $('#tabla').DataTable({
+            dom: 'Bfrtip',
+            searching: true,
+            search: {
+                smart: true
+            },
+            lengthMenu: [50, 100, 200],
+            pageLength: 100,
+            order: [[0, 'desc']],
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.10.25/i18n/Spanish.json'
+            },
+            buttons: [
+                {
+                    extend: 'excel',
+                    text: '<i class="fas fa-file-excel"></i> Excel',
+                    className: 'btn btn-success btn-sm',
+                    exportOptions: {
+                        columns: ':not(:last-child)'
+                    }
+                }
+            ],
+            columnDefs: [
+                { targets: [10], orderable: false, searchable: false }
+            ]
+        })
+    }
+
     function init(info){
         //Cargar registros
         cargarRegistros({criterio: 'inspeccionar', estado: 4}, function(){
-            $("#tabla").DataTable({
-                "lengthMenu": [ 50, 100, 200 ],
-                "pageLength": 100,
-                "language":{
-                    "decimal":        "",
-                    "emptyTable":     "Sin datos para mostrar",
-                    "info":           "Mostrando _START_ al _END_ de _TOTAL_ registros",
-                    "infoEmpty":      "Mostrando 0 to 0 of 0 entries",
-                    "infoFiltered":   "(Filtrado de _MAX_ total registros)",
-                    "infoPostFix":    "",
-                    "thousands":      ".",
-                    "lengthMenu":     "Mostrar _MENU_ registros",
-                    "loadingRecords": "Cargando...",
-                    "processing":     "Procesando...",
-                    "search":         "Buscar:",
-                    "zeroRecords":    "Ningún registro encontrado",
-                    "paginate": {
-                        "first":      "Primero",
-                        "last":       "Último",
-                        "next":       "Sig",
-                        "previous":   "Ant"
-                    },
-                    "aria": {
-                        "sortAscending":  ": activate to sort column ascending",
-                        "sortDescending": ": activate to sort column descending"
-                    }
-                }
-            })
+            inicializarDataTable()
         })
     }
 
@@ -144,7 +158,7 @@
                             </td>
                         </tr>`
             })
-            $('#contenido').append(fila)
+            $('#contenido').html(fila)
             callback()
             $('#conteo_total').text(`Total: ${r.data.length || 0}`)
         })
